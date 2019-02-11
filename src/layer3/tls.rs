@@ -2,45 +2,47 @@
 use prelude::*;
 
 /// The TLS parser
+#[derive(Debug)]
 pub struct TlsParser;
 
 impl Parsable<PathIp> for TlsParser {
     /// Parse a `TlsPacket` from an `&[u8]`
-    fn parse<'a>(&mut self,
-                 input: &'a [u8],
-                 result: Option<&ParserResultVec>,
-                 _: Option<&mut PathIp>)
-                 -> IResult<&'a [u8], ParserResult> {
-        do_parse!(input,
+    fn parse<'a>(
+        &mut self,
+        input: &'a [u8],
+        result: Option<&ParserResultVec>,
+        _: Option<&mut PathIp>,
+    ) -> IResult<&'a [u8], ParserResult> {
+        do_parse!(
+            input,
             // Check the transport protocol from the parent parser (TCP)
             expr_opt!(match result {
                 Some(vector) => match vector.last() {
                     // Check the parent node for the correct transport protocol
-                    Some(ref any) => if let Some(_) = any.downcast_ref::<TcpPacket>() {
-                        Some(())
-                    } else {
-                        None
-                    },
+                    Some(ref any) => {
+                        if let Some(_) = any.downcast_ref::<TcpPacket>() {
+                            Some(())
+                        } else {
+                            None
+                        }
+                    }
 
                     // Previous result found, but not correct parent
                     _ => None,
                 },
                 // Parse also if no result is given, for testability
                 None => Some(()),
-            }) >>
-
-            content_type: map_opt!(be_u8, TlsRecordContentType::from_u8) >>
-            version: take!(2) >>
-            length: be_u16 >>
-
-            (Box::new(TlsPacket {
-                content_type: content_type,
-                version: TlsRecordVersion {
-                    major: version[0],
-                    minor: version[1],
-                },
-                length: length,
-            }))
+            }) >> content_type: map_opt!(be_u8, TlsRecordContentType::from_u8)
+                >> version: take!(2)
+                >> length: be_u16
+                >> (Box::new(TlsPacket {
+                    content_type: content_type,
+                    version: TlsRecordVersion {
+                        major: version[0],
+                        minor: version[1],
+                    },
+                    length: length,
+                }))
         )
     }
 }

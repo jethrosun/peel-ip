@@ -16,10 +16,10 @@ travis-ci = { repository = "saschagrunert/peel-ip", branch = "master" }
 appveyor = { repository = "saschagrunert/peel-ip", branch = "master", service = "github" }
 
 [dependencies]
-log = "0"
-peel = "0"
-nom = {version = "2", features = ["verbose-errors"]}
-path = "0"
+log = "0.3.4"
+peel = { git = "https://github.com/jethrosun/peel" }
+nom = {version = "3", features = ["verbose-errors"]}
+path = { git = "https://github.com/jethrosun/path" }
 
 [dev-dependencies]
 time = "0"

@@ -2,58 +2,60 @@
 use prelude::*;
 
 /// The ARP parser
+#[derive(Debug)]
 pub struct ArpParser;
 
 impl Parsable<PathIp> for ArpParser {
     /// Parse an `ArpPacket` from an `&[u8]`
-    fn parse<'a>(&mut self,
-                 input: &'a [u8],
-                 result: Option<&ParserResultVec>,
-                 _: Option<&mut PathIp>)
-                 -> IResult<&'a [u8], ParserResult> {
-        do_parse!(input,
+    fn parse<'a>(
+        &mut self,
+        input: &'a [u8],
+        result: Option<&ParserResultVec>,
+        _: Option<&mut PathIp>,
+    ) -> IResult<&'a [u8], ParserResult> {
+        do_parse!(
+            input,
             // Check the type from the parent parser (Ethernet)
             expr_opt!(match result {
                 Some(vector) => match vector.last() {
                     // Check the parent node for the correct EtherType
-                    Some(ref any) => if let Some(eth) = any.downcast_ref::<EthernetPacket>() {
-                        if eth.ethertype == EtherType::Arp {
-                            Some(())
+                    Some(ref any) => {
+                        if let Some(eth) = any.downcast_ref::<EthernetPacket>() {
+                            if eth.ethertype == EtherType::Arp {
+                                Some(())
+                            } else {
+                                None
+                            }
                         } else {
                             None
                         }
-                    } else {
-                        None
-                    },
+                    }
 
                     // Previous result found, but not correct parent
                     _ => None,
                 },
                 // Parse also if no result is given, for testability
                 None => Some(()),
-            }) >>
-
-            hw_type: map_opt!(be_u16, ArpHardwareType::from_u16) >>
-            p_type: map_opt!(be_u16, EtherType::from_u16) >>
-            hw_len: be_u8 >>
-            pr_len: be_u8 >>
-            oper: map_opt!(be_u16, ArpOperation::from_u16) >>
-            s: take!(6) >>
-            ip_sender: map!(be_u32, Ipv4Addr::from) >>
-            t: take!(6) >>
-            ip_target: map!(be_u32, Ipv4Addr::from) >>
-
-            (Box::new(ArpPacket {
-                hardware_type: hw_type,
-                protocol_type: p_type,
-                hardware_length: hw_len,
-                protocol_length: pr_len,
-                operation: oper,
-                sender_hardware_address: MacAddress(s[0], s[1], s[2], s[3], s[4], s[5]),
-                sender_protocol_address: ip_sender,
-                target_hardware_address: MacAddress(t[0], t[1], t[2], t[3], t[4], t[5]),
-                target_protocol_address: ip_target,
-            }))
+            }) >> hw_type: map_opt!(be_u16, ArpHardwareType::from_u16)
+                >> p_type: map_opt!(be_u16, EtherType::from_u16)
+                >> hw_len: be_u8
+                >> pr_len: be_u8
+                >> oper: map_opt!(be_u16, ArpOperation::from_u16)
+                >> s: take!(6)
+                >> ip_sender: map!(be_u32, Ipv4Addr::from)
+                >> t: take!(6)
+                >> ip_target: map!(be_u32, Ipv4Addr::from)
+                >> (Box::new(ArpPacket {
+                    hardware_type: hw_type,
+                    protocol_type: p_type,
+                    hardware_length: hw_len,
+                    protocol_length: pr_len,
+                    operation: oper,
+                    sender_hardware_address: MacAddress(s[0], s[1], s[2], s[3], s[4], s[5]),
+                    sender_protocol_address: ip_sender,
+                    target_hardware_address: MacAddress(t[0], t[1], t[2], t[3], t[4], t[5]),
+                    target_protocol_address: ip_target,
+                }))
         )
     }
 }
@@ -97,7 +99,6 @@ pub struct ArpPacket {
     /// Target protocol address: Internetwork address of the intended receiver.
     pub target_protocol_address: Ipv4Addr,
 }
-
 
 #[derive(Debug, Eq, PartialEq)]
 /// Supported ARP Hardware Types

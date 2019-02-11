@@ -2,16 +2,19 @@
 use prelude::*;
 
 /// The IPv6 parser
+#[derive(Debug)]
 pub struct Ipv6Parser;
 
 impl Parsable<PathIp> for Ipv6Parser {
     /// Parse an `Ipv6Packet` from an `&[u8]`
-    fn parse<'a>(&mut self,
-                 input: &'a [u8],
-                 result: Option<&ParserResultVec>,
-                 _: Option<&mut PathIp>)
-                 -> IResult<&'a [u8], ParserResult> {
-        do_parse!(input,
+    fn parse<'a>(
+        &mut self,
+        input: &'a [u8],
+        result: Option<&ParserResultVec>,
+        _: Option<&mut PathIp>,
+    ) -> IResult<&'a [u8], ParserResult> {
+        do_parse!(
+            input,
             // Check the type from the parent parser (Ethernet)
             expr_opt!(match result {
                 Some(vector) => match vector.last() {

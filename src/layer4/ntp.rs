@@ -2,68 +2,69 @@
 use prelude::*;
 
 /// The UDP parser
+#[derive(Debug)]
 pub struct NtpParser;
 
 impl Parsable<PathIp> for NtpParser {
-
     /// Parse a `NtpPacket` from an `&[u8]`
-    fn parse<'a>(&mut self,
-                 input: &'a [u8],
-                 result: Option<&ParserResultVec>,
-                 _: Option<&mut PathIp>)
-                 -> IResult<&'a [u8], ParserResult> {
-        do_parse!(input,
+    fn parse<'a>(
+        &mut self,
+        input: &'a [u8],
+        result: Option<&ParserResultVec>,
+        _: Option<&mut PathIp>,
+    ) -> IResult<&'a [u8], ParserResult> {
+        do_parse!(
+            input,
             // Check the transport protocol from the parent parser (UDP)
             expr_opt!(match result {
                 Some(vector) => {
                     match vector.last() {
                         // Check the parent node for the correct transport protocol
-                        Some(ref any) => if let Some(_) = any.downcast_ref::<UdpPacket>() {
-                            Some(())
-                        } else {
-                            None
-                        },
+                        Some(ref any) => {
+                            if let Some(_) = any.downcast_ref::<UdpPacket>() {
+                                Some(())
+                            } else {
+                                None
+                            }
+                        }
 
                         // Previous result found, but not correct parent
                         _ => None,
                     }
-                },
+                }
                 // Parse also if no result is given, for testability
                 None => Some(()),
-            }) >>
-
-            b0: bits!(tuple!(take_bits!(u8, 2),
-                             take_bits!(u8, 3),
-                             take_bits!(u8, 3))) >>
-            st: be_u8 >>
-            pl: be_i8 >>
-            pr: be_i8 >>
-            rde: be_u32 >>
-            rdi: be_u32 >>
-            rid: be_u32 >>
-            tsr: be_u64 >>
-            tso: be_u64 >>
-            tsv: be_u64 >>
-            tsx: be_u64 >>
-            auth: opt!(complete!(pair!(be_u32,
-                                 map!(take!(16), Vec::from)))) >>
-
-            (Box::new(NtpPacket {
-                li: b0.0,
-                version: b0.1,
-                mode: b0.2,
-                stratum: st,
-                poll: pl,
-                precision: pr,
-                root_delay: rde,
-                root_dispersion: rdi,
-                ref_id: rid,
-                ts_ref: tsr,
-                ts_orig: tso,
-                ts_recv: tsv,
-                ts_xmit: tsx,
-                auth: auth,
-            }))
+            }) >> b0: bits!(tuple!(
+                take_bits!(u8, 2),
+                take_bits!(u8, 3),
+                take_bits!(u8, 3)
+            )) >> st: be_u8
+                >> pl: be_i8
+                >> pr: be_i8
+                >> rde: be_u32
+                >> rdi: be_u32
+                >> rid: be_u32
+                >> tsr: be_u64
+                >> tso: be_u64
+                >> tsv: be_u64
+                >> tsx: be_u64
+                >> auth: opt!(complete!(pair!(be_u32, map!(take!(16), Vec::from))))
+                >> (Box::new(NtpPacket {
+                    li: b0.0,
+                    version: b0.1,
+                    mode: b0.2,
+                    stratum: st,
+                    poll: pl,
+                    precision: pr,
+                    root_delay: rde,
+                    root_dispersion: rdi,
+                    ref_id: rid,
+                    ts_ref: tsr,
+                    ts_orig: tso,
+                    ts_recv: tsv,
+                    ts_xmit: tsx,
+                    auth: auth,
+                }))
         )
     }
 }

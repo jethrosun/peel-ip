@@ -2,21 +2,24 @@
 use prelude::*;
 
 /// The HTTP parser
+#[derive(Debug)]
 pub struct HttpParser;
 
 impl Parsable<PathIp> for HttpParser {
     /// Parse a `HttpPacket` from an `&[u8]`
-    fn parse<'a>(&mut self,
-                 input: &'a [u8],
-                 result: Option<&ParserResultVec>,
-                 _: Option<&mut PathIp>)
-                 -> IResult<&'a [u8], ParserResult> {
-        do_parse!(input,
-
+    fn parse<'a>(
+        &mut self,
+        input: &'a [u8],
+        result: Option<&ParserResultVec>,
+        _: Option<&mut PathIp>,
+    ) -> IResult<&'a [u8], ParserResult> {
+        do_parse!(
+            input,
             // Check the transport protocol from the parent parser (TCP or TLS)
-            result: alt!(
-                // TCP based plain text transfer
-                cond_reduce!(match result {
+            result:
+                alt!(
+                    // TCP based plain text transfer
+                    cond_reduce!(match result {
                     Some(vector) => match vector.last() {
                         Some(ref any) => if let Some(_) = any.downcast_ref::<TcpPacket>() {
                             true
@@ -30,9 +33,8 @@ impl Parsable<PathIp> for HttpParser {
 
                 // TLS based encrypted traffic
                 apply!(HttpPacket::parse_encrypted, result)
-            ) >>
-
-            (result)
+                )
+                >> (result)
         )
     }
 }
@@ -61,23 +63,30 @@ impl HttpPacket {
            alt!(call!(HttpRequest::parse) | call!(HttpResponse::parse))
     );
 
-    fn parse_encrypted<'a>(input: &'a [u8], result: Option<&ParserResultVec>) -> IResult<&'a [u8], ParserResult> {
-        expr_opt!(input,
+    fn parse_encrypted<'a>(
+        input: &'a [u8],
+        result: Option<&ParserResultVec>,
+    ) -> IResult<&'a [u8], ParserResult> {
+        expr_opt!(
+            input,
             match result {
                 Some(vector) => match (vector.last(), vector.iter().rev().nth(1)) {
-
                     (Some(ref any_tls), Some(ref any_tcp)) => {
-                        match (any_tls.downcast_ref::<TlsPacket>(),
-                               any_tcp.downcast_ref::<TcpPacket>()) {
-
+                        match (
+                            any_tls.downcast_ref::<TlsPacket>(),
+                            any_tcp.downcast_ref::<TcpPacket>(),
+                        ) {
                             /// TLS and TCP combination matches
-                            (Some(_), Some(tcp)) if (tcp.header.source_port == 443 || tcp.header.dest_port == 443) => {
+                            (Some(_), Some(tcp))
+                                if (tcp.header.source_port == 443
+                                    || tcp.header.dest_port == 443) =>
+                            {
                                 Some(Box::new(HttpPacket::Any))
                             }
 
                             _ => None,
                         }
-                    },
+                    }
 
                     _ => None, // Previous result found, but not correct parent
                 },

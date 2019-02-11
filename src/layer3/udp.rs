@@ -2,16 +2,19 @@
 use prelude::*;
 
 /// The UDP parser
+#[derive(Debug)]
 pub struct UdpParser;
 
 impl Parsable<PathIp> for UdpParser {
     /// Parse an `UdpPacket` from an `&[u8]`
-    fn parse<'a>(&mut self,
-                 input: &'a [u8],
-                 result: Option<&ParserResultVec>,
-                 path: Option<&mut PathIp>)
-                 -> IResult<&'a [u8], ParserResult> {
-        do_parse!(input,
+    fn parse<'a>(
+        &mut self,
+        input: &'a [u8],
+        result: Option<&ParserResultVec>,
+        path: Option<&mut PathIp>,
+    ) -> IResult<&'a [u8], ParserResult> {
+        do_parse!(
+            input,
             // Check the IP protocol from the parent parser (IPv4 or IPv6)
             expr_opt!(match result {
                 Some(vector) => match vector.last() {

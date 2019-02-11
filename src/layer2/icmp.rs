@@ -2,16 +2,19 @@
 use prelude::*;
 
 /// The ICMP parser
+#[derive(Debug)]
 pub struct IcmpParser;
 
 impl Parsable<PathIp> for IcmpParser {
     /// Parse an `IcmpPacket` from an `&[u8]`
-    fn parse<'a>(&mut self,
-                 input: &'a [u8],
-                 result: Option<&ParserResultVec>,
-                 _: Option<&mut PathIp>)
-                 -> IResult<&'a [u8], ParserResult> {
-        do_parse!(input,
+    fn parse<'a>(
+        &mut self,
+        input: &'a [u8],
+        result: Option<&ParserResultVec>,
+        _: Option<&mut PathIp>,
+    ) -> IResult<&'a [u8], ParserResult> {
+        do_parse!(
+            input,
             expr_opt!(match result {
                 Some(vector) => match vector.last() {
                     // ICMP on top of IPv4
